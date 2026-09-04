@@ -1,0 +1,71 @@
+name: User API Regression Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  api-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Restore API
+        run: dotnet restore UserApi/UserApi.csproj
+
+      - name: Build API
+        run: dotnet build UserApi/UserApi.csproj --configuration Release --no-restore
+
+      - name: Install Newman
+        run: npm install --global newman
+
+      - name: Start API and run regression tests
+        shell: bash
+        env:
+          ASPNETCORE_URLS: http://localhost:5216
+        run: |
+          dotnet run \
+            --project UserApi/UserApi.csproj \
+            --configuration Release \
+            --no-build \
+            --no-launch-profile \
+            > api.log 2>&1 &
+
+          API_PID=$!
+          trap 'kill $API_PID' EXIT
+
+          for attempt in {1..30}; do
+            if curl --fail --silent http://localhost:5216/api/users > /dev/null; then
+              break
+            fi
+
+            if [ "$attempt" -eq 30 ]; then
+              cat api.log
+              exit 1
+            fi
+
+            sleep 1
+          done
+
+          newman run "Postman/User API Tests.postman_collection.json" \
+            -e "Postman/User API Local.postman_environment.json" \
+            --env-var "baseUrl=http://localhost:5216" \
+            -n 3
