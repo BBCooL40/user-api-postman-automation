@@ -1,0 +1,851 @@
+{
+  "info": {
+    "_postman_id": "2cb2ee0b-eb70-4b0d-97b0-bb8a162b0d68",
+    "name": "User API Tests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "40397083"
+  },
+  "item": [
+    {
+      "name": "01 - Create User",
+      "item": [
+        {
+          "name": "Happy Path",
+          "item": [
+            {
+              "name": "Create user - valid data",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 201\", () => {\r\n    pm.response.to.have.status(201);\r\n});\r\n\r\nconst responseJson = pm.response.json();\r\n\r\npm.collectionVariables.set(\r\n    \"createdUserId\",\r\n    responseJson.id\r\n);\r\n\r\npm.test(\"Response contains a generated id\", () => {\r\n    pm.expect(responseJson.id).to.be.a(\"string\").and.not.empty;\r\n});\r\n\r\npm.test(\"Returned name is correct\", () => {\r\n    pm.expect(responseJson.name)\r\n        .to.eql(pm.variables.get(\"userName\"));\r\n});\r\n\r\npm.test(\"Returned email is correct\", () => {\r\n    pm.expect(responseJson.email)\r\n        .to.eql(pm.variables.get(\"userEmail\"));\r\n});\r\n\r\npm.test(\"Returned age is correct\", () => {\r\n    pm.expect(responseJson.age)\r\n        .to.eql(Number(pm.variables.get(\"userAge\")));\r\n});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.variables.set(\"userName\", \"Anton\");\r\npm.variables.set(\"userAge\", 37);\r\n\r\nconst uniqueEmail = `anton.${Date.now()}@example.com`;\r\npm.variables.set(\"userEmail\", uniqueEmail);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"name\": \"{{userName}}\",\r\n  \"email\": \"{{userEmail}}\",\r\n  \"age\": {{userAge}}\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get created user by id",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\nconst responseJson = pm.response.json();\r\npm.test(\"Returned user has the expected id\", () => {\r\n    pm.expect(responseJson.id)\r\n        .to.eql(\r\n            pm.collectionVariables.get(\"createdUserId\")\r\n        );\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/{{createdUserId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "{{createdUserId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get all users",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\nconst responseJson = pm.response.json();\r\n\r\npm.test(\"Response is an array\", () => {\r\n    pm.expect(responseJson).to.be.an(\"array\");\r\n});\r\n\r\npm.test(\"Created user exists in the users list\", () => {\r\n    const createdUserId =\r\n        pm.collectionVariables.get(\"createdUserId\");\r\n\r\n    const userExists = responseJson.some(user =>\r\n        user.id === createdUserId\r\n    );\r\n\r\n    pm.expect(userExists).to.be.true;\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete created user",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const createdUserId =\r\n    pm.collectionVariables.get(\"createdUserId\");\r\n\r\nif (!createdUserId) {\r\n    throw new Error(\r\n        \"createdUserId is missing. Run Create user first.\"\r\n    );\r\n}"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 204\", () => {\r\n    pm.response.to.have.status(204);\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/{{createdUserId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "{{createdUserId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Verify deleted user is not found",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const createdUserId =\r\n    pm.collectionVariables.get(\"createdUserId\");\r\n\r\nif (!createdUserId) {\r\n    throw new Error(\r\n        \"createdUserId is missing. Run Create user first.\"\r\n    );\r\n}"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 404\", () => {\r\n    pm.response.to.have.status(404);\r\n});\r\n\r\nconst responseJson = pm.response.json();\r\n\r\npm.test(\"Deleted user is not found\", () => {\r\n    pm.expect(responseJson.error)\r\n        .to.eql(\"User not found.\");\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/{{createdUserId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "{{createdUserId}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Validation",
+          "item": [
+            {
+              "name": "Email Uniqueness",
+              "item": [
+                {
+                  "name": "Setup - create user for duplicate test",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test(\"Status code is 201\", () => {\r\n    pm.response.to.have.status(201);\r\n});\r\n\r\nconst responseJson = pm.response.json();\r\n\r\npm.test(\"Response contains a generated id\", () => {\r\n    pm.expect(responseJson.id).to.be.a(\"string\").and.not.empty;\r\n});\r\n\r\npm.test(\"Returned name is correct\", () => {\r\n    pm.expect(responseJson.name)\r\n        .to.eql(pm.variables.get(\"userName\"));\r\n});\r\n\r\npm.test(\"Returned email is correct\", () => {\r\n    pm.expect(responseJson.email)\r\n        .to.eql(pm.variables.get(\"userEmail\"));\r\n});\r\n\r\npm.test(\"Returned age is correct\", () => {\r\n    pm.expect(responseJson.age)\r\n        .to.eql(Number(pm.variables.get(\"userAge\")));\r\n});"
+                        ]
+                      }
+                    },
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.variables.set(\"userName\", \"Anton\");\r\npm.variables.set(\"userAge\", 37);\r\n\r\nconst duplicateEmail =\r\n    `duplicate.${Date.now()}@example.com`;\r\n\r\npm.collectionVariables.set(\r\n    \"duplicateEmail\",\r\n    duplicateEmail\r\n);\r\n\r\npm.variables.set(\"userEmail\", duplicateEmail);"
+                        ]
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n  \"name\": \"{{userName}}\",\r\n  \"email\": \"{{userEmail}}\",\r\n  \"age\": {{userAge}}\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/users",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "users"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Reject user with duplicate email",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test(\"Status code is 409\", () => {\r\n    pm.response.to.have.status(409);\r\n});\r\n\r\nconst responseJson = pm.response.json();\r\n\r\npm.test(\"Duplicate email error is returned\", () => {\r\n    pm.expect(responseJson.error)\r\n        .to.eql(\"Email already exists.\");\r\n});"
+                        ]
+                      }
+                    },
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.variables.set(\"userName\", \"Anton\");\r\npm.variables.set(\"userAge\", 37);\r\n\r\nconst duplicateEmail =\r\n    pm.collectionVariables.get(\"duplicateEmail\");\r\n\r\nif (!duplicateEmail) {\r\n    throw new Error(\r\n        \"duplicateEmail is missing. Run the setup request first.\"\r\n    );\r\n}\r\n\r\npm.variables.set(\"userEmail\", duplicateEmail);"
+                        ]
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n  \"name\": \"{{userName}}\",\r\n  \"email\": \"{{userEmail}}\",\r\n  \"age\": {{userAge}}\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/users",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "users"
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Reject user with age 17",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 422\", () => {\n    pm.response.to.have.status(422);\n});\nconst responseJson = pm.response.json();\npm.test(\"Age validation error is returned\", () => {\n    pm.expect(responseJson.error).to.eql(\"Age must be between 18 and 65.\");\n});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.variables.set(\"userName\", \"Anton\");\r\npm.variables.set(\"userAge\", 17);\r\n\r\nconst uniqueEmail = `anton.${Date.now()}@example.com`;\r\npm.variables.set(\"userEmail\", uniqueEmail);\r\n\r\npm.collectionVariables.set(\r\n    \"rejectedUserEmail\",\r\n    pm.variables.get(\"userEmail\")\r\n);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"name\": \"{{userName}}\",\r\n  \"email\": \"{{userEmail}}\",\r\n  \"age\": {{userAge}}\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Verify rejected user was not stored",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\nconst responseJson = pm.response.json();\r\n\r\npm.test(\"Rejected user was not stored\", () => {\r\n    const rejectedUserEmail =\r\n        pm.collectionVariables.get(\"rejectedUserEmail\");\r\n\r\n    pm.expect(\r\n        rejectedUserEmail,\r\n        \"rejectedUserEmail was not set by the previous request\"\r\n    ).to.be.a(\"string\").and.not.empty;\r\n\r\n    const rejectedUserExists = responseJson.some(user =>\r\n        user.email === rejectedUserEmail\r\n    );\r\n\r\n    pm.expect(rejectedUserExists).to.be.false;\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Reject user with age 66",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 422\", () => {\n    pm.response.to.have.status(422);\n});\nconst responseJson = pm.response.json();\n\npm.test(\"Age validation error is returned\", () => {\n    pm.expect(responseJson.error).to.eql(\"Age must be between 18 and 65.\");\n});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.variables.set(\"userName\", \"Anton\");\r\npm.variables.set(\"userAge\", 66);\r\n\r\nconst uniqueEmail = `anton.${Date.now()}@example.com`;\r\npm.variables.set(\"userEmail\", uniqueEmail);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"name\": \"{{userName}}\",\r\n  \"email\": \"{{userEmail}}\",\r\n  \"age\": {{userAge}}\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Accept user with minimum age 18",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 201\", () => {\r\n    pm.response.to.have.status(201);\r\n});\r\n\r\nconst responseJson = pm.response.json();\r\n\r\npm.test(\"Response contains a generated id\", () => {\r\n    pm.expect(responseJson.id).to.be.a(\"string\").and.not.empty;\r\n});\r\npm.test(\"Returned name is correct\", () => {\r\n    pm.expect(responseJson.name)\r\n        .to.eql(pm.variables.get(\"userName\"));\r\n});\r\npm.test(\"Returned email is correct\", () => {\r\n    pm.expect(responseJson.email)\r\n        .to.eql(pm.variables.get(\"userEmail\"));\r\n});\r\n\r\npm.test(\"Returned age is correct\", () => {\r\n    pm.expect(responseJson.age)\r\n        .to.eql(Number(pm.variables.get(\"userAge\")));\r\n});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.variables.set(\"userName\", \"Anton\");\r\npm.variables.set(\"userAge\", 18);\r\n\r\nconst uniqueEmail = `anton.${Date.now()}@example.com`;\r\npm.variables.set(\"userEmail\", uniqueEmail);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"name\": \"{{userName}}\",\r\n  \"email\": \"{{userEmail}}\",\r\n  \"age\": {{userAge}}\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Accept user with maximum age 65",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 201\", () => {\r\n    pm.response.to.have.status(201);\r\n});\r\n\r\nconst responseJson = pm.response.json();\r\n\r\npm.test(\"Response contains a generated id\", () => {\r\n    pm.expect(responseJson.id).to.be.a(\"string\").and.not.empty;\r\n});\r\npm.test(\"Returned name is correct\", () => {\r\n    pm.expect(responseJson.name)\r\n        .to.eql(pm.variables.get(\"userName\"));\r\n});\r\npm.test(\"Returned email is correct\", () => {\r\n    pm.expect(responseJson.email)\r\n        .to.eql(pm.variables.get(\"userEmail\"));\r\n});\r\n\r\npm.test(\"Returned age is correct\", () => {\r\n    pm.expect(responseJson.age)\r\n        .to.eql(Number(pm.variables.get(\"userAge\")));\r\n});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.variables.set(\"userName\", \"Anton\");\r\npm.variables.set(\"userAge\", 65);\r\n\r\nconst uniqueEmail = `anton.${Date.now()}@example.com`;\r\npm.variables.set(\"userEmail\", uniqueEmail);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"name\": \"{{userName}}\",\r\n  \"email\": \"{{userEmail}}\",\r\n  \"age\": {{userAge}}\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Reject user with empty name",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 422\", () => {\r\n    pm.response.to.have.status(422);\r\n});\r\nconst responseJson = pm.response.json();\r\n\r\npm.test(\"Name validation error is returned\", () => {\r\n    pm.expect(responseJson.error).to.eql(\"Name is required.\");\r\n});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.variables.set(\"userName\", \"\");\r\npm.variables.set(\"userAge\", 37);\r\n\r\nconst uniqueEmail = `anton.${Date.now()}@example.com`;\r\npm.variables.set(\"userEmail\", uniqueEmail);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"name\": \"{{userName}}\",\r\n  \"email\": \"{{userEmail}}\",\r\n  \"age\": {{userAge}}\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Reject user with null name",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 422\", () => {\r\n    pm.response.to.have.status(422);\r\n});\r\nconst responseJson = pm.response.json();\r\n\r\npm.test(\"Name validation error is returned\", () => {\r\n    pm.expect(responseJson.error).to.eql(\"Name is required.\");\r\n});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "\r\npm.variables.set(\"userAge\", 37);\r\n\r\nconst uniqueEmail = `anton.${Date.now()}@example.com`;\r\npm.variables.set(\"userEmail\", uniqueEmail);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"name\": null,\r\n  \"email\": \"{{userEmail}}\",\r\n  \"age\": {{userAge}}\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Reject user with whitespace-only name",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 422\", () => {\r\n    pm.response.to.have.status(422);\r\n});\r\nconst responseJson = pm.response.json();\r\n\r\npm.test(\"Name validation error is returned\", () => {\r\n    pm.expect(responseJson.error).to.eql(\"Name is required.\");\r\n});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.variables.set(\"userName\", \"   \");\r\npm.variables.set(\"userAge\", 37);\r\n\r\nconst uniqueEmail = `anton.${Date.now()}@example.com`;\r\npm.variables.set(\"userEmail\", uniqueEmail);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"name\": \"{{userName}}\",\r\n  \"email\": \"{{userEmail}}\",\r\n  \"age\": {{userAge}}\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Reject user with invalid email",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 422\", () => {\r\n    pm.response.to.have.status(422);\r\n});\r\n\r\nconst responseJson = pm.response.json();\r\n\r\npm.test(\"Email validation error is returned\", () => {\r\n    pm.expect(responseJson.error)\r\n        .to.eql(\"Email format is invalid.\");\r\n});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.variables.set(\"userName\", \"Anton\");\r\npm.variables.set(\"userAge\", 37);\r\n\r\nconst uniqueEmail = `anton.${Date.now()}example.com`;\r\npm.variables.set(\"userEmail\", uniqueEmail);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"name\": \"{{userName}}\",\r\n  \"email\": \"{{userEmail}}\",\r\n  \"age\": {{userAge}}\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Reject user with null email",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 422\", () => {\r\n    pm.response.to.have.status(422);\r\n});\r\n\r\nconst responseJson = pm.response.json();\r\n\r\npm.test(\"Email validation error is returned\", () => {\r\n    pm.expect(responseJson.error)\r\n        .to.eql(\"Email is required.\");\r\n});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.variables.set(\"userName\", \"Anton\");\r\npm.variables.set(\"userAge\", 37);\r\n\r\n"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"name\": \"{{userName}}\",\r\n  \"email\": null,\r\n  \"age\": {{userAge}}\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Reject user with missing email",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 422\", () => {\r\n    pm.response.to.have.status(422);\r\n});\r\n\r\nconst responseJson = pm.response.json();\r\n\r\npm.test(\"Email validation error is returned\", () => {\r\n    pm.expect(responseJson.error)\r\n        .to.eql(\"Email is required.\");\r\n});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.variables.set(\"userName\", \"Anton\");\r\npm.variables.set(\"userAge\", 37);\r\n\r\n"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"name\": \"{{userName}}\",\r\n  \"age\": {{userAge}}\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get nonexistent user by id",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 404\", () => {\r\n    pm.response.to.have.status(404);\r\n});\r\n\r\nconst responseJson = pm.response.json();\r\n\r\npm.test(\"User not found error is returned\", () => {\r\n    pm.expect(responseJson.error)\r\n        .to.eql(\"User not found.\");\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/00000000-0000-0000-0000-000000000001",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "00000000-0000-0000-0000-000000000001"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "duplicateEmail",
+      "value": ""
+    },
+    {
+      "key": "createdUserId",
+      "value": ""
+    },
+    {
+      "key": "rejectedUserEmail",
+      "value": ""
+    }
+  ]
+}
