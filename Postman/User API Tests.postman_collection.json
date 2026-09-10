@@ -97,7 +97,7 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\nconst responseJson = pm.response.json();\r\n\r\npm.test(\"Response is an array\", () => {\r\n    pm.expect(responseJson).to.be.an(\"array\");\r\n});\r\n\r\npm.test(\"Created user exists in the users list\", () => {\r\n    const createdUserId =\r\n        pm.collectionVariables.get(\"createdUserId\");\r\n\r\n    const userExists = responseJson.some(user =>\r\n        user.id === createdUserId\r\n    );\r\n\r\n    pm.expect(userExists).to.be.true;\r\n});"
+                      "pm.test(\"Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\nconst responseJson = pm.response.json();\r\n\r\npm.test(\"Response is an array\", () => {\r\n    pm.expect(responseJson).to.be.an(\"array\");\r\n});\r\n\r\npm.test(\"Created user exists in the users list\", () => {\r\n    const createdUserId =\r\n        pm.collectionVariables.get(\"createdUserId\");\r\n\r\n    const userExists = responseJson.some(user =>\r\n        user.id === createdUserId\r\n    );\r\n\r\n    pm.expect(userExists).to.be.true;\r\n});\r\npm.test(\"Users list is not empty\", () => {\r\n    pm.expect(\r\n        responseJson,\r\n        \"Users list should not be empty\"\r\n    ).to.be.an(\"array\").that.is.not.empty;\r\n});\r\npm.test(\"All stored users are adults\", () => {\r\n    const allUsersAreAdults = responseJson.every(\r\n        user => user.age >= 18\r\n    );\r\n\r\n    pm.expect(allUsersAreAdults).to.be.true;\r\n});"
                     ]
                   }
                 }
