@@ -1,10 +1,22 @@
+using Microsoft.EntityFrameworkCore;
 using System.Net.Mail;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddOpenApi();
 
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite(
+        builder.Configuration.GetConnectionString("DefaultConnection")
+    )
+);
+
 var app = builder.Build();
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -42,8 +54,8 @@ app.MapGet("/weatherforecast", () =>
     return forecast;
 })
 .WithName("GetWeatherForecast");
-var users = new List<User>();
-app.MapPost("/api/users", (CreateUserRequest user) =>
+
+app.MapPost("/api/users", async (CreateUserRequest user, AppDbContext db) =>
 {
     if (string.IsNullOrWhiteSpace(user.Name))
 {
@@ -73,14 +85,11 @@ if (string.IsNullOrWhiteSpace(user.Email))
             error = "Age must be between 18 and 65."
         });
     }
-bool emailExists = users.Any(existingUser =>
-    string.Equals(
-        existingUser.Email,
-        user.Email,
-        StringComparison.OrdinalIgnoreCase
-    ));
+    bool emailExists = await db.Users.AnyAsync(existingUser =>
+        existingUser.Email.ToLower() == user.Email.ToLower()
+    );
 
-if (emailExists)
+    if (emailExists)
 {
     return Results.Conflict(new
     {
@@ -96,15 +105,15 @@ var newUser = new User(
     user.Age
 );
 
-users.Add(newUser);
+    db.Users.Add(newUser);
+    await db.SaveChangesAsync();
 
-return Results.Created($"/api/users/{id}", newUser);
+    return Results.Created($"/api/users/{id}", newUser);
 })
 .WithName("CreateUser");
-app.MapGet("/api/users/{id:guid}", (Guid id) =>
+app.MapGet("/api/users/{id:guid}", async (Guid id, AppDbContext db) =>
 {
-    var foundUser = users.FirstOrDefault(existingUser =>
-        existingUser.Id == id);
+    var foundUser = await db.Users.FindAsync(id);
 
     if (foundUser is null)
     {
@@ -117,15 +126,16 @@ app.MapGet("/api/users/{id:guid}", (Guid id) =>
     return Results.Ok(foundUser);
 })
 .WithName("GetUserById");
-app.MapGet("/api/users", () =>
+app.MapGet("/api/users", async (AppDbContext db) =>
 {
+    var users = await db.Users.ToListAsync();
+
     return Results.Ok(users);
 })
 .WithName("GetAllUsers");
-app.MapDelete("/api/users/{id:guid}", (Guid id) =>
+app.MapDelete("/api/users/{id:guid}", async (Guid id, AppDbContext db) =>
 {
-    var userToDelete = users.FirstOrDefault(existingUser =>
-        existingUser.Id == id);
+    var userToDelete = await db.Users.FindAsync(id);
 
     if (userToDelete is null)
     {
@@ -135,7 +145,8 @@ app.MapDelete("/api/users/{id:guid}", (Guid id) =>
         });
     }
 
-    users.Remove(userToDelete);
+    db.Users.Remove(userToDelete);
+    await db.SaveChangesAsync();
 
     return Results.NoContent();
 })
@@ -156,7 +167,7 @@ record CreateUserRequest(
     string Email,
     int Age);
 
-record User(
+public record User(
     Guid Id,
     string Name,
     string Email,
